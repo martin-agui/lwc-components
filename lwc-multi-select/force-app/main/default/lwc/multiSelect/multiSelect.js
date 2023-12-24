@@ -8,12 +8,13 @@ export default class MultiSelect extends LightningElement {
     rendered = false;
     
     @api width = 100;
+    @api pillIcon;
     @api variant = '';
     @api label = '';
     @api name = '';
     @api placeholder = '';
     @api dropdownLength = 5;
-    @api selectedPills = [];  //seperate from values, because for some reason pills use {label,name} while values uses {label:value}
+    @api selectedPills = []; //seperate from values, because for some reason pills use {label,name} while values uses {label:value}
     @api options;
     @api get value(){
         let selectedValues =  this.selectedValues();
@@ -22,20 +23,19 @@ export default class MultiSelect extends LightningElement {
     set value(value){
         this.value_ = value;
         this.parseValue(value);
-        
     }
     parseValue(value){
         if (!value || !this.options || this.options.length < 1){
-        return;
+            return;
         }
-        var values = value.split(";");
-        var valueSet = new Set(values);
+        let values = value.split(";");
+        let valueSet = new Set(values);
 
         this.options = this.options.map(function(option) {
-        if (valueSet.has(option.value)){
-            option.selected = true;
-        }
-        return option;
+            if (valueSet.has(option.value)){
+                option.selected = true;
+            }
+            return option;
         });
         this.selectedPills = this.getPillArray();
     }
@@ -49,7 +49,7 @@ export default class MultiSelect extends LightningElement {
     }
     //private called by getter of 'value'
     selectedValues(){
-        var values = [];
+        let values = [];
         //if no options set yet or invalid, just return value
         if (this.options.length < 1){
         return this.value_;
@@ -70,17 +70,14 @@ export default class MultiSelect extends LightningElement {
     }
 
     get mainDivClass(){
-        var style = ' slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click ';
+        const style = ' slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click ';
         return this.isOpen ? ' slds-is-open ' + style : style;
     }
     get hintText(){
-        if (this.selectedPills.length === 0) {
-        return this.placeholder;
-        }
-        return "";
+        return this.selectedPills.length === 0 ? this.placeholder : '';
     }
     openDropdown(){
-        this.isOpen = true;
+        this.isOpen = !this.isOpen;
     }
     closeDropdown(){
         this.isOpen = false;
@@ -114,35 +111,31 @@ export default class MultiSelect extends LightningElement {
         event.preventDefault();
         event.stopPropagation();
         const listData = event.detail;
-        const { value, selected, shift } = listData;
-        this.options = this.options.map( option => {
-            if (shift) {
-                if (option.value === value) {
-                    return {...option, selected:!selected};
-                    // return { ...option, selected: selected === true ? false : true };
+        const { value, selected, shift, ctrlKey } = listData;
+        if (ctrlKey&&shift) {
+            this.options = this.options.map( option => {
+                return {...option, selected:!selected};
+            })
+            this.closeDropdown();
+        }else{
+            this.options = this.options.map( option => {
+                if (shift) {
+                    if (option.value === value) {
+                        return {...option, selected:!selected};
+                    }
+                }else{
+                    if (option.value === value) {
+                        const optionNueva = {...option, selected:!selected};
+                        this.closeDropdown();
+                        return optionNueva;
+                    } 
                 }
-            }else{
-                if (option.value === value) {
-                    const optionNueva = {...option, selected:!selected};
-                    // const optionNueva = { ...option, selected: selected === true ? false : true };
-                    this.closeDropdown();
-                    return optionNueva;
-                } 
-                // else {
-                //     try {
-                //         option = { ...option, selected: false };
-                //     } catch (error) {
-                //         console.log(error.message);
-                //     }
-                // }
-            }
-            return{
-                ...option
-            }
-        });
+                return{
+                    ...option
+                }
+            });
+        }
         this.selectedPills = this.getPillArray();
-        console.log(this.selectedPills);
-        console.log('this.selectedPills');
         this.despatchChangeEvent();
     }
     despatchChangeEvent() {
